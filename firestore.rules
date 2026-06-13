@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas para presupuestos - cualquier usuario autenticado puede leer/escribir
+    match /budgets/{weekId} {
+      allow read, write: if true;
+    }
+    match /budgets/{weekId}/{document=**} {
+      allow read, write: if true;
+    }
+    // Reglas para transacciones (gastos reales)
+    match /transactions/{weekId} {
+      allow read, write: if true;
+    }
+    match /transactions/{weekId}/{document=**} {
+      allow read, write: if true;
+    }
+    // Reglas para calendario menstrual
+    // Lectura: cualquier usuario autenticado
+    // Escritura: solo Miri (miri@finanzas.com)
+    match /menstrual/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

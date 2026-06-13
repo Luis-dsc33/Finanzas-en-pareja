@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "87320469507",
+    "project_id": "finanzas-miri-y-luisito",
+    "storage_bucket": "finanzas-miri-y-luisito.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:87320469507:android:d283a3df52939942a62e36",
+        "android_client_info": {
+          "package_name": "com.example.finanzas_pareja"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "87320469507-f5d0colked1ahnk8dj76sm952mmo7kkp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.finanzas_pareja",
+            "certificate_hash": "2069f435f97ac16d7a4aebda4168eaae10c6a69c"
+          }
+        },
+        {
+          "client_id": "87320469507-cqg4obu79lqo40iat8g2qm08i2fo84tv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzZsoeDCjpoNJl8pP00lGgFtlv8_akHuI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "87320469507-cqg4obu79lqo40iat8g2qm08i2fo84tv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
