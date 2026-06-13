@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math' as math;
 import 'firebase_options.dart';
 import 'features/budget/budget_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'features/menstrual/menstrual_screen.dart';
+import 'features/dashboard/dashboard_screen.dart';
 import 'services/firebase/auth_service.dart';
 import 'services/firebase/transaction_service.dart';
 import 'services/firebase/budget_service.dart';
@@ -74,7 +76,7 @@ class FinanceAppMockup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Nuestras Finanzas 💕',
+      title: 'M & L',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
@@ -97,7 +99,20 @@ class FinanceAppMockup extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginScreen(),
+      home: StreamBuilder<User?>(
+        stream: AuthService().authStateChanges,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator(color: AppColors.lavender)),
+            );
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            return const MainNavigation();
+          }
+          return const LoginScreen();
+        },
+      ),
     );
   }
 }
@@ -266,11 +281,7 @@ class _LoginFormState extends State<_LoginForm> {
     );
     if (mounted) {
       setState(() => _isLoading = false);
-      if (userCred != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
-        );
-      }
+      // El StreamBuilder en main.dart se encargará de mostrar MainNavigation automáticamente.
     }
   }
 
@@ -505,464 +516,7 @@ class _NavBarItem extends StatelessWidget {
 // ─────────────────────────────────────────────
 // PANTALLA DASHBOARD
 // ─────────────────────────────────────────────
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hola, Miri & Luisito 👋',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Junio 2026',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                // Avatares (Botón para cerrar sesión)
-                GestureDetector(
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: AppColors.background,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        title: const Text('Cerrar sesión',
-                            style: TextStyle(fontWeight: FontWeight.w700)),
-                        content: const Text('¿Estás seguro que deseas cerrar sesión?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancelar',
-                                style: TextStyle(color: AppColors.textSecondary)),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.coral,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: () async {
-                              Navigator.pop(context);
-                              await AuthService().signOut();
-                            },
-                            child: const Text('Salir'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.lavenderLight),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildAvatar('M', AppColors.pink),
-                        Transform.translate(
-                          offset: const Offset(-8, 0),
-                          child: _buildAvatar('L', AppColors.lavender),
-                        ),
-                        const SizedBox(width: 2),
-                        const Icon(Icons.logout_rounded, size: 16, color: AppColors.coral),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Tarjeta de Balance
-            _buildBalanceCard(),
-            const SizedBox(height: 20),
-
-            // Ingreso vs Gasto rápido
-            Row(
-              children: [
-                Expanded(
-                    child: _buildQuickStat(
-                        '📥', 'Ingresos', '\$30,000', AppColors.mintLight,
-                        AppColors.mint)),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildQuickStat(
-                        '📤', 'Gastos', '\$11,550', AppColors.pinkLight,
-                        AppColors.pink)),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Metas de ahorro mini
-            _buildSectionTitle('Metas de ahorro', '✨'),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 115,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _buildMiniGoalCard(
-                    emoji: '🏠',
-                    title: 'Casa Querétaro',
-                    progress: 0.30,
-                    color: AppColors.lavender,
-                    bgColor: AppColors.lavenderLight,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildMiniGoalCard(
-                    emoji: '🏖️',
-                    title: 'Puerto Escondido',
-                    progress: 0.375,
-                    color: AppColors.skyBlue,
-                    bgColor: AppColors.skyBlueLight,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildMiniGoalCard(
-                    emoji: '🚗',
-                    title: 'Auto nuevo',
-                    progress: 0.12,
-                    color: AppColors.peach,
-                    bgColor: AppColors.peachLight,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Gastos recientes
-            _buildSectionTitle('Gastos recientes', '📝'),
-            const SizedBox(height: 12),
-            _buildTransactionItem(
-              emoji: '🛒',
-              title: 'Supermercado',
-              subtitle: 'Hoy · Miri',
-              amount: -1250.00,
-              color: AppColors.peach,
-            ),
-            _buildTransactionItem(
-              emoji: '💡',
-              title: 'Pago de Luz',
-              subtitle: 'Ayer · Luisito',
-              amount: -350.00,
-              color: AppColors.lemon,
-            ),
-            _buildTransactionItem(
-              emoji: '🍕',
-              title: 'Salida a cenar',
-              subtitle: 'Lun · Ambos',
-              amount: -480.00,
-              color: AppColors.coral,
-            ),
-            _buildTransactionItem(
-              emoji: '💰',
-              title: 'Depósito quincena',
-              subtitle: 'Dom · Luisito',
-              amount: 15000.00,
-              color: AppColors.mint,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAvatar(String letter, Color color) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.cardBackground, width: 2.5),
-      ),
-      child: Center(
-        child: Text(
-          letter,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: color,
-            fontSize: 15,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFCBB6F0),
-            Color(0xFFE8A4C8),
-            Color(0xFFF2C6A0),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.lavender.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  '💕 Presupuesto juntos',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '\$18,450',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 40,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-            ),
-          ),
-          const Text(
-            'disponible este mes',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Barra de progreso del presupuesto
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: 0.385,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor: const AlwaysStoppedAnimation(Colors.white),
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '38.5% del presupuesto gastado',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStat(
-      String emoji, String label, String value, Color bgColor, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 8),
-          Text(label,
-              style: TextStyle(
-                  color: textColor, fontSize: 12, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 2),
-          Text(value,
-              style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title, String emoji) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          '$emoji $title',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        TextButton(
-          onPressed: () {},
-          child: const Text(
-            'Ver todo',
-            style: TextStyle(
-              color: AppColors.lavender,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMiniGoalCard({
-    required String emoji,
-    required String title,
-    required double progress,
-    required Color color,
-    required Color bgColor,
-  }) {
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 28)),
-          const SizedBox(height: 8),
-          Text(title,
-              style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
-          const Spacer(),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: color.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation(color),
-              minHeight: 6,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text('${(progress * 100).toInt()}%',
-              style: TextStyle(
-                  color: color, fontWeight: FontWeight.w700, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionItem({
-    required String emoji,
-    required String title,
-    required String subtitle,
-    required double amount,
-    required Color color,
-  }) {
-    bool isIncome = amount > 0;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 22))),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: AppColors.textPrimary)),
-                const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
-              ],
-            ),
-          ),
-          Text(
-            '${isIncome ? '+' : '-'}\$${amount.abs().toStringAsFixed(0)}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: isIncome ? const Color(0xFF5FB87A) : AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// DashboardScreen ahora está en features/dashboard/dashboard_screen.dart
 
 // ─────────────────────────────────────────────
 // PANTALLA TRANSACCIONES
