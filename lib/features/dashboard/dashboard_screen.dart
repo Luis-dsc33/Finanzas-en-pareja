@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../main.dart'; // AppColors
@@ -10,15 +11,17 @@ import '../../services/firebase/menstrual_service.dart';
 import '../../models/budget_models.dart';
 import '../../models/transaction_models.dart';
 import '../../models/menstrual_models.dart';
+import '../../models/goal_models.dart';
+import '../goals/providers/goal_provider.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final BudgetService _budgetService = BudgetService();
   final TransactionService _transactionService = TransactionService();
   final MenstrualService _menstrualService = MenstrualService();
@@ -36,19 +39,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   StreamSubscription? _menstrualSub;
 
   late String _currentWeekId;
-
-  // Datos de prueba para Ahorros y Deudas
-  final List<Map<String, dynamic>> _mockSavings = [
-    {'name': 'Casa', 'emoji': '🏠', 'goal': 3780.0},
-    {'name': 'Vacaciones', 'emoji': '🏖️', 'goal': 0.0},
-    {'name': 'Auto', 'emoji': '🚗', 'goal': 0.0},
-    {'name': 'Otros', 'emoji': '🔮', 'goal': 0.0},
-  ];
-
-  final List<Map<String, dynamic>> _mockDebts = [
-    {'name': 'Otro', 'emoji': '🎱', 'amount': 1900.0},
-    {'name': 'Otro', 'emoji': '🎱', 'amount': 1500.0},
-  ];
 
   @override
   void initState() {
@@ -135,6 +125,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final goalsAsync = ref.watch(goalsDataProvider);
+    final goalsData = goalsAsync.value ?? FinancialGoalsData();
+
     if (_isLoading) {
       return const SafeArea(
         child: Center(child: CircularProgressIndicator(color: AppColors.skyBlue)),
@@ -173,9 +166,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _buildSavingsList()),
+                      Expanded(child: _buildSavingsList(goalsData.savingsGoals)),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildDebtsList()),
+                      Expanded(child: _buildDebtsList(goalsData.debts)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -715,38 +708,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // ═══════════════════════════════════════════
   // D. AHORROS Y DEUDAS
   // ═══════════════════════════════════════════
-  Widget _buildSavingsList() {
-    final total = _mockSavings.fold(0.0, (s, e) => s + (e['goal'] as double));
-    return _buildMockTable(
-      title: 'Resumen de tus ahorros',
-      headerRight: 'Objetivo al mes',
-      items: _mockSavings,
-      itemKey: 'goal',
-      footerTitle: 'Total de objetivos al mes',
-      footerTotal: total,
-    );
-  }
-
-  Widget _buildDebtsList() {
-    final total = _mockDebts.fold(0.0, (s, e) => s + (e['amount'] as double));
-    return _buildMockTable(
-      title: 'Resumen de tus deudas',
-      headerRight: 'Deuda Actual',
-      items: _mockDebts,
-      itemKey: 'amount',
-      footerTitle: 'Total de Deuda Actual',
-      footerTotal: total,
-    );
-  }
-
-  Widget _buildMockTable({
-    required String title,
-    required String headerRight,
-    required List<Map<String, dynamic>> items,
-    required String itemKey,
-    required String footerTitle,
-    required double footerTotal,
-  }) {
+  Widget _buildSavingsList(List<SavingsGoal> savings) {
+    final total = savings.fold(0.0, (s, e) => s + e.monthlyTarget);
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFF004D73).withOpacity(0.3)),
@@ -760,21 +723,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: Color(0xFF004D73),
               borderRadius: BorderRadius.only(topLeft: Radius.circular(7), topRight: Radius.circular(7)),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10))),
-                Text(headerRight, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
+                Expanded(child: Text('Resumen de tus ahorros', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10))),
+                Text('Objetivo al mes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
               ],
             ),
           ),
-          ...items.map((e) {
-            final val = e[itemKey] as double;
+          if (savings.isEmpty)
+             const Padding(padding: EdgeInsets.all(8.0), child: Text('No hay metas', style: TextStyle(fontSize: 11))),
+          ...savings.map((e) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 children: [
-                  Expanded(child: Text('${e['emoji']} ${e['name']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
-                  Text(val > 0 ? '\$${val.toStringAsFixed(0)}' : '-', style: const TextStyle(fontSize: 11)),
+                  Expanded(child: Text('${e.emoji} ${e.title}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                  Text(e.monthlyTarget > 0 ? '\$${e.monthlyTarget.toStringAsFixed(0)}' : '-', style: const TextStyle(fontSize: 11)),
                 ],
               ),
             );
@@ -785,11 +749,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(footerTitle, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10)),
+                const Text('Total de objetivos al mes', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 10)),
                 const SizedBox(height: 2),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: Text('\$${footerTotal.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.skyBlue)),
+                  child: Text('\$${total.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.skyBlue)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebtsList(List<DebtItem> debts) {
+    final total = debts.fold(0.0, (s, e) => s + e.balance);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF004D73).withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFF004D73),
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(7), topRight: Radius.circular(7)),
+            ),
+            child: const Row(
+              children: [
+                Expanded(child: Text('Resumen de tus deudas', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10))),
+                Text('Deuda Actual', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
+              ],
+            ),
+          ),
+          if (debts.isEmpty)
+             const Padding(padding: EdgeInsets.all(8.0), child: Text('No hay deudas', style: TextStyle(fontSize: 11))),
+          ...debts.map((e) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(child: Text('💳 ${e.title}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
+                  Text(e.balance > 0 ? '\$${e.balance.toStringAsFixed(0)}' : '-', style: const TextStyle(fontSize: 11)),
+                ],
+              ),
+            );
+          }).toList(),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Total de Deuda Actual', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 10)),
+                const SizedBox(height: 2),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('\$${total.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.skyBlue)),
                 ),
               ],
             ),

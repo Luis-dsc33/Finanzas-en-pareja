@@ -23,5 +23,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+    // Reglas para metas y deudas
+    match /goals/{docId} {
+      allow read, write: if true;
+    }
+    // Reglas para notas
+    match /notes/{docId} {
+      allow read, write: if true;
+    }
   }
 }

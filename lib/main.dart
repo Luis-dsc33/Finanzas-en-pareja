@@ -9,7 +9,11 @@ import 'features/budget/budget_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'features/menstrual/menstrual_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/goals/goals_screen.dart';
+import 'features/notes/notes_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'services/firebase/auth_service.dart';
+import 'services/notification_service.dart';
 import 'services/firebase/transaction_service.dart';
 import 'services/firebase/budget_service.dart';
 import 'models/transaction_models.dart';
@@ -23,6 +27,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await NotificationService().init();
+  await NotificationService().requestPermissions();
   await initializeDateFormatting('es_ES', null);
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -31,7 +37,7 @@ void main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const FinanceAppMockup());
+  runApp(const ProviderScope(child: FinanceAppMockup()));
 }
 
 // ─────────────────────────────────────────────
@@ -118,7 +124,7 @@ class FinanceAppMockup extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PANTALLA DE LOGIN
+// PANTALLA DE LOGIN (ISLA FLOTANTE CENTRADA)
 // ─────────────────────────────────────────────
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -142,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _slideUp = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.2),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
@@ -171,76 +177,78 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
         child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeIn,
-            child: SlideTransition(
-              position: _slideUp,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icono/Logo
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: AppColors.lavenderLight,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.lavender.withOpacity(0.3),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              physics: const BouncingScrollPhysics(),
+              child: FadeTransition(
+                opacity: _fadeIn,
+                child: SlideTransition(
+                  position: _slideUp,
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.75),
+                      borderRadius: BorderRadius.circular(32),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.8),
+                        width: 1.5,
                       ),
-                      child: const Center(
-                        child: Text(
-                          '💰',
-                          style: TextStyle(fontSize: 52),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.lavender.withOpacity(0.2),
+                          blurRadius: 40,
+                          offset: const Offset(0, 20),
+                          spreadRadius: 2,
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Título dentro de la isla
+                        const Text(
+                          'Nuestras\nFinanzas',
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                            height: 1.1,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Juntos construimos nuestro futuro',
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textSecondary.withOpacity(0.7),
+                            fontWeight: FontWeight.w400,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
 
-                    // Título
-                    const Text(
-                      'Nuestras\nFinanzas',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        height: 1.1,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Juntos construimos\nnuestro futuro 💕',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
+                        // Formulario
+                        const _LoginForm(),
+                        const SizedBox(height: 18),
 
-                    // Formulario de inicio de sesión
-                    const _LoginForm(),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Al iniciar sesión, aceptas nuestros\ntérminos y condiciones',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textLight,
-                        height: 1.4,
-                      ),
+                        // Texto legal dentro de la isla
+                        Text(
+                          'Al iniciar sesión, aceptas nuestros\ntérminos y condiciones',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textLight.withOpacity(0.6),
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -262,6 +270,7 @@ class _LoginFormState extends State<_LoginForm> {
   final _userController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -271,8 +280,9 @@ class _LoginFormState extends State<_LoginForm> {
   }
 
   Future<void> _login() async {
-    if (_userController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) return;
-    
+    if (_userController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) return;
+
     setState(() => _isLoading = true);
     final userCred = await AuthService().signIn(
       context,
@@ -289,57 +299,91 @@ class _LoginFormState extends State<_LoginForm> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Campo Usuario
         TextField(
           controller: _userController,
+          style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: 'Usuario (Luisito o Miri)',
-            filled: true,
-            fillColor: AppColors.cardBackground,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
             ),
-            prefixIcon: const Icon(Icons.person_outline, color: AppColors.lavender),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.lavender, width: 2),
+            ),
+            prefixIcon: const Icon(Icons.person_outline,
+                color: AppColors.lavender, size: 22),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+
+        // Campo Contraseña
         TextField(
           controller: _passwordController,
-          obscureText: true,
+          obscureText: _obscurePassword,
+          style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: 'Contraseña',
-            filled: true,
-            fillColor: AppColors.cardBackground,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
             ),
-            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.lavender),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: AppColors.lavender, width: 2),
+            ),
+            prefixIcon: const Icon(Icons.lock_outline,
+                color: AppColors.lavender, size: 22),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 40, minHeight: 40),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                color: AppColors.lavender.withOpacity(0.6),
+                size: 20,
+              ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
+
+        // Botón tipo píldora oscuro
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 52,
           child: ElevatedButton(
             onPressed: _isLoading ? null : _login,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.lavender,
+              backgroundColor: const Color(0xFF2D2D3A),
               foregroundColor: Colors.white,
+              disabledBackgroundColor:
+                  const Color(0xFF2D2D3A).withOpacity(0.5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(26),
               ),
               elevation: 0,
+              shadowColor: Colors.transparent,
             ),
             child: _isLoading
                 ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
                   )
                 : const Text(
                     'Entrar',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
           ),
         ),
@@ -367,6 +411,7 @@ class _MainNavigationState extends State<MainNavigation> {
     BudgetScreen(),
     GoalsScreen(),
     MenstrualScreen(),
+    NotesScreen(),
   ];
 
   @override
@@ -427,6 +472,13 @@ class _MainNavigationState extends State<MainNavigation> {
                 isSelected: _currentIndex == 4,
                 color: AppColors.pink,
                 onTap: () => setState(() => _currentIndex = 4),
+              ),
+              _NavBarItem(
+                icon: Icons.sticky_note_2_rounded,
+                label: 'Notas',
+                isSelected: _currentIndex == 5,
+                color: AppColors.peach,
+                onTap: () => setState(() => _currentIndex = 5),
               ),
             ],
           ),
@@ -524,325 +576,8 @@ class _NavBarItem extends StatelessWidget {
 // TransactionsScreen ahora está en features/transactions/transactions_screen.dart
 
 // ─────────────────────────────────────────────
-// PANTALLA METAS DE AHORRO
+// PANTALLA METAS DE AHORRO (ahora en features/goals/goals_screen.dart)
 // ─────────────────────────────────────────────
-class GoalsScreen extends StatelessWidget {
-  const GoalsScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Nuestras metas 🎯',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Juntos lo logramos 💪',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 24),
-
-            // Resumen total ahorrado
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFA8E6CF), Color(0xFF88D8B0)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.mint.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const Text('🌱', style: TextStyle(fontSize: 36)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Total ahorrado',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                  const Text(
-                    '\$24,300',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'de \$112,000 en total',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Tarjetas de metas individuales
-            _buildGoalDetailCard(
-              emoji: '🏠',
-              title: 'Fondo Casa Querétaro',
-              current: 15000,
-              target: 50000,
-              monthlyTarget: 3780,
-              color: AppColors.lavender,
-              bgColor: AppColors.lavenderLight,
-              daysLeft: 180,
-            ),
-            const SizedBox(height: 16),
-            _buildGoalDetailCard(
-              emoji: '🏖️',
-              title: 'Viaje Puerto Escondido',
-              current: 4500,
-              target: 12000,
-              monthlyTarget: 1000,
-              color: AppColors.skyBlue,
-              bgColor: AppColors.skyBlueLight,
-              daysLeft: 90,
-            ),
-            const SizedBox(height: 16),
-            _buildGoalDetailCard(
-              emoji: '🚗',
-              title: 'Auto nuevo',
-              current: 4800,
-              target: 50000,
-              monthlyTarget: 2500,
-              color: AppColors.peach,
-              bgColor: AppColors.peachLight,
-              daysLeft: 365,
-            ),
-            const SizedBox(height: 24),
-
-            // Deudas activas
-            const Text(
-              'Deudas activas 💳',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildDebtCard(
-              title: 'Tarjeta BBVA',
-              balance: 8500,
-              monthlyPayment: 1200,
-              color: AppColors.pink,
-            ),
-            const SizedBox(height: 10),
-            _buildDebtCard(
-              title: 'Crédito Coppel',
-              balance: 3200,
-              monthlyPayment: 450,
-              color: AppColors.coral,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGoalDetailCard({
-    required String emoji,
-    required String title,
-    required double current,
-    required double target,
-    required double monthlyTarget,
-    required Color color,
-    required Color bgColor,
-    required int daysLeft,
-  }) {
-    double progress = current / target;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                    child: Text(emoji, style: const TextStyle(fontSize: 26))),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            color: AppColors.textPrimary)),
-                    Text('Faltan $daysLeft días',
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: color.withOpacity(0.12),
-              valueColor: AlwaysStoppedAnimation(color),
-              minHeight: 10,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '\$${current.toStringAsFixed(0)} ahorrado',
-                style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13),
-              ),
-              Text(
-                'Meta: \$${target.toStringAsFixed(0)}',
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 13),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.calendar_today_rounded,
-                    size: 14, color: color),
-                const SizedBox(width: 6),
-                Text(
-                  'Aporte mensual: \$${monthlyTarget.toStringAsFixed(0)}',
-                  style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDebtCard({
-    required String title,
-    required double balance,
-    required double monthlyPayment,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.15)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-                child: Text('💳', style: TextStyle(fontSize: 20))),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                        fontSize: 15)),
-                Text('Pago mensual: \$${monthlyPayment.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
-              ],
-            ),
-          ),
-          Text(
-            '\$${balance.toStringAsFixed(0)}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 // PANTALLA ASESOR IA (GEMINI)
