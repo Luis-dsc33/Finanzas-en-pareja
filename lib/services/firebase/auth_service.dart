@@ -14,11 +14,11 @@ class AuthService {
   Future<UserCredential?> signIn(BuildContext context, String username, String password) async {
     try {
       final userLower = username.trim().toLowerCase();
-      if (userLower != 'luisito' && userLower != 'miri') {
-        throw Exception('Usuario no válido. Usa "Luisito" o "Miri".');
+      if (userLower.isEmpty) {
+        throw Exception('El usuario no puede estar vacío.');
       }
 
-      String email = userLower == 'luisito' ? 'luisito@finanzas.com' : 'miri@finanzas.com';
+      String email = '${userLower.replaceAll(' ', '')}@finanzas.com';
 
       try {
         // Intentar iniciar sesión

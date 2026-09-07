@@ -7,7 +7,6 @@ import 'dart:math' as math;
 import 'firebase_options.dart';
 import 'features/budget/budget_screen.dart';
 import 'features/transactions/transactions_screen.dart';
-import 'features/menstrual/menstrual_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/goals/goals_screen.dart';
 import 'features/notes/notes_screen.dart';
@@ -304,7 +303,7 @@ class _LoginFormState extends State<_LoginForm> {
           controller: _userController,
           style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
           decoration: InputDecoration(
-            hintText: 'Usuario (Luisito o Miri)',
+            hintText: 'Usuario (Tú o tu pareja)',
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
@@ -410,7 +409,6 @@ class _MainNavigationState extends State<MainNavigation> {
     TransactionsScreen(),
     BudgetScreen(),
     GoalsScreen(),
-    MenstrualScreen(),
     NotesScreen(),
   ];
 
@@ -467,18 +465,11 @@ class _MainNavigationState extends State<MainNavigation> {
                 onTap: () => setState(() => _currentIndex = 3),
               ),
               _NavBarItem(
-                icon: Icons.favorite_rounded,
-                label: 'Ciclo',
-                isSelected: _currentIndex == 4,
-                color: AppColors.pink,
-                onTap: () => setState(() => _currentIndex = 4),
-              ),
-              _NavBarItem(
                 icon: Icons.sticky_note_2_rounded,
                 label: 'Notas',
-                isSelected: _currentIndex == 5,
+                isSelected: _currentIndex == 4,
                 color: AppColors.peach,
-                onTap: () => setState(() => _currentIndex = 5),
+                onTap: () => setState(() => _currentIndex = 4),
               ),
             ],
           ),
@@ -648,7 +639,7 @@ class GeminiAdvisorScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    '¡Hola Miri y Luisito! 💕 Este mes van por buen camino. Han gastado el 38.5% de su presupuesto y estamos a mitad de mes, eso es excelente.\n\nSin embargo, noté que el gasto en "Comida fuera" subió un 15% respecto al mes pasado. Si lo mantienen controlado, podrían aportar \$500 extras al viaje a Puerto Escondido 🏖️',
+                    '¡Hola a ambos! 💕 Este mes van por buen camino. Han gastado el 38.5% de su presupuesto y estamos a mitad de mes, eso es excelente.\n\nSin embargo, noté que el gasto en "Comida fuera" subió un 15% respecto al mes pasado. Si lo mantienen controlado, podrían aportar \$500 extras al viaje a Puerto Escondido 🏖️',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textPrimary,
@@ -1100,13 +1091,13 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ),
             const SizedBox(height: 10),
             Row(
-              children: ['Miri', 'Luisito', 'Ambos'].map((name) {
+              children: ['Yo', 'Mi pareja', 'Ambos'].map((name) {
                 final isSelected = _selectedPaidBy == name;
                 Color chipColor;
-                if (name == 'Miri') {
-                  chipColor = AppColors.pink;
-                } else if (name == 'Luisito') {
+                if (name == 'Yo') {
                   chipColor = AppColors.skyBlue;
+                } else if (name == 'Mi pareja') {
+                  chipColor = AppColors.pink;
                 } else {
                   chipColor = AppColors.lavender;
                 }

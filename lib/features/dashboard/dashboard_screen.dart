@@ -7,10 +7,8 @@ import '../../main.dart'; // AppColors
 import '../../services/firebase/auth_service.dart';
 import '../../services/firebase/budget_service.dart';
 import '../../services/firebase/transaction_service.dart';
-import '../../services/firebase/menstrual_service.dart';
 import '../../models/budget_models.dart';
 import '../../models/transaction_models.dart';
-import '../../models/menstrual_models.dart';
 import '../../models/goal_models.dart';
 import '../goals/providers/goal_provider.dart';
 
@@ -24,19 +22,16 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final BudgetService _budgetService = BudgetService();
   final TransactionService _transactionService = TransactionService();
-  final MenstrualService _menstrualService = MenstrualService();
 
   bool _isLoading = true;
 
   // Datos
   BudgetData? _budget;
   List<TransactionItem> _monthlyTransactions = [];
-  MenstrualData? _menstrualData;
 
   // Suscripciones
   StreamSubscription? _budgetSub;
   StreamSubscription? _transactionsSub;
-  StreamSubscription? _menstrualSub;
 
   late String _currentWeekId;
 
@@ -63,14 +58,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       wId = BudgetService.getPreviousWeekId(wId);
     }
     _transactionsSub = _transactionService.watchTransactionsForWeeks(weekIds).listen((transactions) {
-      if (mounted) setState(() => _monthlyTransactions = transactions);
-    });
-
-    // 3. Escuchar datos menstruales
-    _menstrualSub = _menstrualService.watchData().listen((data) {
       if (mounted) {
         setState(() {
-          _menstrualData = data;
+          _monthlyTransactions = transactions;
           _isLoading = false; // Asumimos que este es el último
         });
       }
@@ -81,7 +71,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void dispose() {
     _budgetSub?.cancel();
     _transactionsSub?.cancel();
-    _menstrualSub?.cancel();
     super.dispose();
   }
 
@@ -154,10 +143,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   _buildBudgetProgressCard(),
                   const SizedBox(height: 20),
 
-                  // B. Módulo del Ciclo Menstrual
-                  _buildMenstrualWidget(),
-                  const SizedBox(height: 20),
-
                   // C. Gastos Mensuales (Dona + Tabla)
                   _buildMonthlyExpensesChart(),
                   const SizedBox(height: 20),
@@ -189,7 +174,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // ═══════════════════════════════════════════
   Widget _buildHeader() {
     final userEmail = FirebaseAuth.instance.currentUser?.email ?? '';
-    final name = userEmail.contains('miri') ? 'Miri' : (userEmail.contains('luisito') ? 'Luisito' : 'Miri & Luisito');
+    final emailPrefix = userEmail.split('@').first;
+    final name = emailPrefix.isNotEmpty ? emailPrefix[0].toUpperCase() + emailPrefix.substring(1) : 'Usuario';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -509,67 +495,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════
-  // B. MÓDULO CICLO MENSTRUAL
-  // ═══════════════════════════════════════════
-  Widget _buildMenstrualWidget() {
-    final mData = _menstrualData ?? MenstrualData();
-    if (mData.cycles.isEmpty) return const SizedBox();
-
-    final phase = mData.currentPhase;
-    final emoji = mData.currentPhaseEmoji;
-    final daysUntil = mData.daysUntilNextPeriod;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.pink.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.pink.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.pink.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Text(emoji, style: const TextStyle(fontSize: 24)),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ciclo de Miri 🌸',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.pink),
-                ),
-                Text(
-                  phase,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-                ),
-                if (daysUntil != null)
-                  Text(
-                    daysUntil <= 0 ? 'Periodo esperado hoy o ya en curso' : 'Próximo periodo en $daysUntil días',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-              ],
-            ),
           ),
         ],
       ),
