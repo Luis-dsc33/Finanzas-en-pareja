@@ -1,11 +1,11 @@
 {
-    "name": "finanzas_pareja",
-    "short_name": "finanzas_pareja",
+    "name": "CashFlow",
+    "short_name": "CashFlow",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "App de finanzas personales y compartidas.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

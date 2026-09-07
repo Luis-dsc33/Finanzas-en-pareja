@@ -81,7 +81,7 @@ class FinanceAppMockup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'M & L',
+      title: 'CashFlow',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
@@ -208,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen>
                       children: [
                         // Título dentro de la isla
                         const Text(
-                          'Nuestras\nFinanzas',
+                          'CashFlow',
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             fontSize: 34,

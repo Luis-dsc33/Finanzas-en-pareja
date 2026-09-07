@@ -1,4 +1,4 @@
-# Finanzas Personales (y Compartidas)
+# CashFlow (Finanzas Personales y Compartidas)
 
 ## Descripción del Proyecto
 Esta es una aplicación móvil desarrollada en Flutter orientada a la gestión de finanzas personales, con la capacidad de extenderse para manejar finanzas compartidas en pareja. La aplicación ayuda a los usuarios a llevar un control estricto de su presupuesto, ingresos, gastos y metas financieras. Cuenta con un diseño amigable de estilo pastel y un asistente impulsado por inteligencia artificial (Gemini) para brindar resúmenes y consejos personalizados.
